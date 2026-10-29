@@ -1,0 +1,9 @@
+{
+  "name": "PortGlass",
+  "slug": "portglass",
+  "identifier": "io.github.liangzhiyu.portglass",
+  "version": "0.1.0",
+  "copyright": "© 2026 liangzhiyu",
+  "out": "build",
+  "macos": { "minimumSystemVersion": "14.0", "signingIdentity": "-" }
+}

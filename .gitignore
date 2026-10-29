@@ -1,0 +1,10 @@
+/build/
+/dist/
+/tmp/
+/.DS_Store
+*.pcap
+*.pcapng
+*.log
+*.key
+*.p12
+*.mobileprovision
