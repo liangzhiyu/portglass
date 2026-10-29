@@ -2,11 +2,13 @@
 
 A native macOS port inspector, built in Go with [MyGo](https://github.com/egoist/mygo).
 
-输入端口，查看经过它的请求与返回。PortGlass 将类似 `ngrep` 的被动抓包放进一个原生 Mac 窗口：液态玻璃侧栏、实时流量列表、可搜索的请求与响应详情。
+输入端口，查看经过它的请求与返回。PortGlass 将类似 `ngrep` 的被动抓包放进一个原生 Mac 窗口：浮动玻璃监听栏、实时流量列表、可搜索的请求与响应详情。
 
 ![PortGlass](docs/screenshot.png)
 
-界面渲染使用明确标记的示例数据；运行中的窗口侧栏使用 macOS 系统材质。
+![PortGlass 深色外观](docs/screenshot-dark.png)
+
+截图由应用的 UI 渲染器生成，使用明确标记的示例数据。监听栏、导航选中态与方向切换采用 MyGo Glass 的背景模糊、折射和高光着色器，在 macOS 上通过 Metal 加速。正文区域保持清晰背景。设计参考与实现说明见 [DESIGN.md](docs/DESIGN.md)。
 
 ## 下载与使用
 
@@ -23,13 +25,13 @@ A native macOS port inspector, built in Go with [MyGo](https://github.com/egoist
 
 ## 支持范围
 
-- macOS 14 或更新版本，Apple Silicon（arm64）。macOS 26+ 使用系统 Liquid Glass；旧系统回退为半透明材质。
+- macOS 14 或更新版本，Apple Silicon（arm64）。液态玻璃由 MyGo 的着色器实现，无需 macOS 26，也不是 SwiftUI 的 `glassEffect`。
 - 本机回环与可用网卡上的 TCP / IPv4 / IPv6。
 - HTTP/1.x 请求与响应配对；处理 TCP 分段、乱序、重传、HTTP keep-alive / pipeline、chunked、gzip、HEAD 和无正文响应。
 - Body、Headers、Raw、Hex 视图；JSON 格式化、可选择文本、复制和查找。
 - 响应接收过程中可预览已收到的正文，不必等待完整响应结束。
 - 普通 TCP 按连接汇总两个方向的字节；TLS 标记为已加密。
-- 界面跟随系统明暗主题，支持中文输入、键盘操作和原生文件对话框。
+- 浅色 / 深色 / 跟随系统三种外观；尊重系统减少透明度、增加对比度与减少动态效果设置。支持中文输入、键盘操作和原生文件对话框。
 
 **边界：** HTTPS 不解密；HTTP/2、WebSocket 升级后的内容和其他 TCP 协议以原始字节查看。UDP / QUIC 不在此版本范围内。抓包开始前的内容无法恢复；有缺失的连接会标明捕获不完整。IP 分片不重组。这里的“输入 / 输出”以所选服务端口为参照，连接中途开始且两端都是所选端口时方向可能无法可靠推断。
 

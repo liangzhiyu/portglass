@@ -5,6 +5,7 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/egoist/mygo/ui"
@@ -42,9 +43,67 @@ func TestInspectorSearchAndDirection(t *testing.T) {
 func TestInvalidPortNeverStartsAuthorization(t *testing.T) {
 	a := New()
 	a.ports = "7010; touch /tmp/invalid"
-	a.Start()
+	tt := ui.NewTester(a.view, 1100, 680)
+	if err := tt.Click("开始监听"); err != nil {
+		t.Fatal(err)
+	}
 	if a.busy || a.running || a.cancel != nil || a.errorText == "" {
 		t.Fatal("invalid port started capture")
+	}
+}
+
+func TestRedesignedControls(t *testing.T) {
+	a := New()
+	a.appearance = 0
+	a.loadDemo()
+	tt := ui.NewTester(a.view, 1100, 680)
+	if err := tt.Click("GET /api/metrics"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Key(0, ui.KeyDown)
+	if a.selected != 5 {
+		t.Fatal("keyboard request navigation failed", a.selected)
+	}
+	if err := tt.Click("GET /api/projects/portglass"); err != nil {
+		t.Fatal(err)
+	}
+	for _, label := range []string{"请求 / 输入", "Raw", "复制"} {
+		if err := tt.Click(label); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if a.side != 0 || !strings.Contains(tt.Clipboard(), "GET /api/projects/portglass HTTP/1.1") {
+		t.Fatal("request/raw/copy flow failed", a.side, tt.Clipboard())
+	}
+	if err := tt.Click("TCP / TLS"); err != nil {
+		t.Fatal(err)
+	}
+	if len(a.filtered()) != 0 || !tt.HasText("没有匹配的流量") {
+		t.Fatal("protocol navigation failed")
+	}
+	if err := tt.Click("全部流量"); err != nil {
+		t.Fatal(err)
+	}
+	if len(a.filtered()) != 7 {
+		t.Fatal("all-traffic navigation failed")
+	}
+	for i, label := range []string{"浅色外观", "深色外观", "跟随系统"} {
+		if err := tt.Click(label); err != nil {
+			t.Fatal(err)
+		}
+		if a.appearance != (i+1)%3 {
+			t.Fatal("appearance control failed")
+		}
+	}
+	for _, label := range []string{"监听端口", "网络接口", "开始监听", "导出会话", "内容查看器"} {
+		r, ok := tt.Find(label)
+		if !ok || r.X < 0 || r.Y < 0 || r.X+r.W > 1101 || r.Y+r.H > 681 {
+			t.Fatalf("control %q outside compact window: %v", label, r)
+		}
+	}
+	tt.SetPreferences(ui.Preferences{HighContrast: true, ReduceMotion: true})
+	if !a.reducedTransparency {
+		t.Fatal("high-contrast fallback not applied")
 	}
 }
 
@@ -74,6 +133,7 @@ func TestVisualLayouts(t *testing.T) {
 	}{{"wide", 1380, 860}, {"compact", 1100, 680}} {
 		for _, dark := range []bool{false, true} {
 			a := New()
+			a.appearance = 0
 			a.loadDemo()
 			tt := ui.NewTester(a.view, size.width, size.height)
 			tt.SetDark(dark)

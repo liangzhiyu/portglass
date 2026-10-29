@@ -36,23 +36,28 @@ type App struct {
 	list                   ui.ListState
 	code                   *editor.State
 	codeText               string
+	appearance             int
+	reducedTransparency    bool
 }
 
 func New() *App {
 	a := &App{ports: "7010", iface: "lo0", index: map[int64]int{}, interfaces: capture.Interfaces()}
 	a.code = &editor.State{Buffer: editor.NewBuffer(""), ReadOnly: true, SoftWrap: true, NoScrollPastEnd: true, NoActiveLine: true, Label: "内容查看器"}
+	a.code.Font = ui.Font{Family: "monospace", Size: 13}
+	a.code.LineHeight = 1.65
 	a.loadConfig()
 	return a
 }
 
 func (a *App) Open(demo bool, screenshot string) {
+	mygo.Theme.SetSource([]mygo.ThemeSource{mygo.ThemeSystem, mygo.ThemeLight, mygo.ThemeDark}[a.appearance])
 	if demo {
 		a.loadDemo()
 	}
 	a.win = mygo.NewWindow(mygo.WindowOptions{
 		Title: "PortGlass", Width: 1380, Height: 860, MinWidth: 1100, MinHeight: 680,
-		TitleBarStyle: mygo.TitleBarHidden, Transparent: true, Vibrancy: mygo.VibrancyGlass,
-		StateKey: "main", Content: ui.View(a.view),
+		TitleBarStyle: mygo.TitleBarHidden,
+		StateKey:      "main", Content: ui.View(a.view),
 	})
 	a.win.OnClosed(func() { a.Stop(); mygo.App.Quit() })
 	if screenshot != "" {
@@ -311,13 +316,19 @@ func configPath() string {
 	return filepath.Join(d, "PortGlass", "settings.json")
 }
 func (a *App) loadConfig() {
-	var c struct{ Ports, Interface string }
+	var c struct {
+		Ports, Interface string
+		Appearance       int
+	}
 	data, err := os.ReadFile(configPath())
 	if err != nil || json.Unmarshal(data, &c) != nil {
 		return
 	}
 	if _, err = traffic.ParsePorts(c.Ports); err == nil {
 		a.ports = c.Ports
+	}
+	if c.Appearance >= 0 && c.Appearance <= 2 {
+		a.appearance = c.Appearance
 	}
 	for _, name := range a.interfaces {
 		if name == c.Interface {
@@ -333,7 +344,10 @@ func (a *App) saveConfig() {
 	if os.MkdirAll(filepath.Dir(p), 0700) != nil {
 		return
 	}
-	b, _ := json.Marshal(struct{ Ports, Interface string }{a.ports, a.iface})
+	b, _ := json.Marshal(struct {
+		Ports, Interface string
+		Appearance       int
+	}{a.ports, a.iface, a.appearance})
 	_ = os.WriteFile(p, b, 0600)
 }
 
