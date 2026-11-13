@@ -1,5 +1,8 @@
 # PortGlass
 
+
+[![Listed on Awesome MyGo](https://awesomemygo.dev/badge.svg)](https://awesomemygo.dev/apps/portglass)
+
 A native macOS port inspector, built in Go with [MyGo](https://github.com/egoist/mygo).
 
 输入端口，查看经过它的请求与返回。PortGlass 将类似 `ngrep` 的被动抓包放进一个原生 Mac 窗口：浮动玻璃监听栏、实时流量列表、可搜索的请求与响应详情。
