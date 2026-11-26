@@ -1,17 +1,60 @@
 # PortGlass
 
-
 [![Listed on Awesome MyGo](https://awesomemygo.dev/badge.svg)](https://awesomemygo.dev/apps/portglass)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black)
+![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-arm64-black)
 
-A native macOS port inspector, built in Go with [MyGo](https://github.com/egoist/mygo).
+> A native macOS port inspector — see HTTP traffic on any port, in a Liquid Glass window.
+>
+> Type a port, hit Start, watch requests and responses live. No proxy, no cert changes, no Wireshark.
 
-输入端口，查看经过它的请求与返回。PortGlass 将类似 `ngrep` 的被动抓包放进一个原生 Mac 窗口：浮动玻璃监听栏、实时流量列表、可搜索的请求与响应详情。
+Built in Go with [MyGo](https://github.com/egoist/mygo).
 
 ![PortGlass](docs/screenshot.png)
 
-![PortGlass 深色外观](docs/screenshot-dark.png)
+![PortGlass in dark mode](docs/screenshot-dark.png)
 
-截图由应用的 UI 渲染器生成，使用明确标记的示例数据。监听栏、导航选中态与方向切换采用 MyGo Glass 的背景模糊、折射和高光着色器，在 macOS 上通过 Metal 加速。正文区域保持清晰背景。设计参考与实现说明见 [DESIGN.md](docs/DESIGN.md)。
+Screenshots are rendered by the app's UI renderer with clearly labeled sample data. The listening bar, navigation selection and direction toggle use MyGo Glass background blur, refraction and highlight shaders, Metal-accelerated on macOS. See [DESIGN.md](docs/DESIGN.md) for design notes.
+
+## Quick Start
+
+Download the Apple Silicon DMG from [Releases](https://github.com/liangzhiyu/portglass/releases), open it and drag **PortGlass.app** to Applications.
+
+1. Enter one or more ports, e.g. `7010,8080`.
+2. For local services pick `lo0`; for other network traffic pick the interface, e.g. `en0`.
+3. Click **Start listening** and approve the macOS admin prompt.
+4. Send requests to your service, pick a record in the list to see request and response.
+
+Search by path, status code, address and body. Copy the current view or export the whole session as JSON (binary fields are Base64 in JSON). Captures stay in memory only — nothing is written to disk or uploaded unless you export. Exported files can contain tokens and cookies from real requests, check before sharing.
+
+**First release is ad-hoc signed, not notarized by Apple.** On first open you may need to allow it in System Settings → Privacy & Security. No need to install Go, Homebrew, ngrep or Wireshark.
+
+## What it does
+
+- macOS 14+, Apple Silicon (arm64). Liquid Glass is implemented with MyGo shaders — no macOS 26 required, not SwiftUI `glassEffect`.
+- TCP / IPv4 / IPv6 on loopback and available interfaces.
+- HTTP/1.x request/response pairing, with TCP segmentation, out-of-order, retransmission, keep-alive / pipelining, chunked, gzip, HEAD and bodyless responses handled.
+- Body, Headers, Raw and Hex views; JSON formatting, selectable text, copy and find.
+- Preview response body while it is still arriving, no need to wait for the full response.
+- Plain TCP is summarized per connection in both directions; TLS is marked as encrypted.
+- Light / Dark / Follow System; respects Reduce Transparency, Increase Contrast and Reduce Motion. Chinese input, keyboard operation and native file dialogs supported.
+
+**Limits:** HTTPS is not decrypted; HTTP/2, post-upgrade WebSocket and other TCP protocols are shown as raw bytes. UDP / QUIC are out of scope for this version. Traffic before capture starts cannot be recovered; incomplete connections are marked as such. IP fragments are not reassembled. “In / Out” is relative to the selected service port — direction may be unreliable when a connection started mid-way and both ends are the selected port.
+
+Preview is up to 64 KiB per direction; single HTTP parse limit is 2 MiB, beyond that shows raw TCP. History is limited to 1,500 entries or ~32 MiB, oldest entries are removed with a count shown. Kernel drop count is always visible. Duration is from complete request captured to complete response captured.
+
+## How capture works
+
+Uses macOS built-in `libpcap` and BPF port filtering. No proxy, no port taken, no changes to system proxy, certificate trust or BPF device permissions.
+
+The UI runs as a normal user. On Start, a separate capture process in the same app is launched with system authorization; it drops root right after opening the capture descriptor and only sends data over a private Unix socket owned by the current user. Stopping, closing the window or socket disconnect ends the capture process. No persistent LaunchDaemon.
+
+---
+
+## 中文说明
+
+输入端口，查看经过它的请求与返回。PortGlass 将类似 `ngrep` 的被动抓包放进一个原生 Mac 窗口：浮动玻璃监听栏、实时流量列表、可搜索的请求与响应详情。
 
 ## 下载与使用
 
